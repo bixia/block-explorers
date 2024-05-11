@@ -20,7 +20,10 @@ use alloy_json_abi::JsonAbi;
 use alloy_primitives::{Address, B256};
 use contract::ContractMetadata;
 use errors::EtherscanError;
-use reqwest::{header, IntoUrl, Url};
+use reqwest::{
+    header::{self, HeaderMap, HeaderValue},
+    IntoUrl, Url,
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     borrow::Cow,
@@ -373,8 +376,16 @@ impl ClientBuilder {
         let ClientBuilder { client, api_key, etherscan_api_url, etherscan_url, cache, chain_id } =
             self;
 
+        let api_key_value =
+            HeaderValue::from_str(api_key.clone().unwrap_or_default().as_str()).unwrap();
+        let mut headers: HeaderMap<HeaderValue> = HeaderMap::with_capacity(2);
+        headers.insert("Ok-Access-Key", api_key_value);
+        debug!("hi i am in");
+        debug!("headers {:?}", headers);
+        let client = reqwest::Client::builder().default_headers(headers).build()?;
         let client = Client {
-            client: client.unwrap_or_default(),
+            // client: client.unwrap_or_default(),
+            client,
             api_key,
             etherscan_api_url: etherscan_api_url
                 .ok_or_else(|| EtherscanError::Builder("etherscan api url".to_string()))?,
@@ -383,6 +394,7 @@ impl ClientBuilder {
             cache,
             chain_id,
         };
+        debug!("client {:?}", client);
         Ok(client)
     }
 }
